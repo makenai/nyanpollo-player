@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Nyanpollo Demo</title>
+	<script src="lib/jquery.js"></script>
+	<script src="lib/mediaelement.js"></script>
+	<script src="data/timeAdjustments.js"></script>
+	<script src="data/sensorData.js"></script>
+</head>
+<body>
+
+<video id="player1" src="../full-video.mp4" type="video/mp4" controls="controls"></video>
+
+<input type="button" id="pp" value="play / pause" />
+<ul>
+	<li><b>seconds of video:</b> <span id="seconds"></span></li>
+	<li><b>time:</b> <span id="time"></span></li>
+</ul>
+<script>
+
+// Get the time adjustment offset
+function getTimeAdjustment( ms ) {
+	var lastAdjustment = timeAdjustments[0];
+	for (var i=0;i<timeAdjustments.length;i++) {
+		var adjustment = timeAdjustments[ i ];
+		if (ms < adjustment.videoTime) {
+			break;
+		}
+		lastAdjustment = adjustment;
+	}
+	return lastAdjustment;
+};
+
+// Given the video seconds, apply adjustment and give a real timestamp
+function getRealTime( ms ) {
+	// {duration: "17s", videoTime: 16770, timestamp: 1445718882843, date: "2015-10-24T20:34:42+00:00"}
+	var adjustment = getTimeAdjustment( ms );
+	var difference = ms - adjustment.videoTime;
+	return adjustment.timestamp + difference;
+}
+
+function getDataPacket( timestamp ) {
+	
+}
+
+MediaElement('player1', {success: function(me) {
+	me.play();
+
+	me.addEventListener('timeupdate', function() {
+		// This whole thing should take 30ms or less
+		var ms = me.currentTime * 1000;
+		var realTime = getRealTime( ms );
+		var data = getDataPacket( realTime );
+		document.getElementById('seconds').innerHTML = me.currentTime;
+		document.getElementById('time').innerHTML = new Date(realTime);
+	}, false);
+
+	document.getElementById('pp')['onclick'] = function() {
+		if (me.paused)
+			me.play();
+		else
+			me.pause();
+	};
+
+}});
+</script>
+
+</body>
+</html>
