@@ -20,4 +20,6 @@ for (var i=0; i<aprsData.length; i++) {
   }
 }
 
-console.log( combinedData );
+jsonfile.writeFile('sensorData.js', combinedData, function (err) {
+  if (err) { console.error(err) };
+});

@@ -4,9 +4,11 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<title>Nyanpollo Demo</title>
 	<script src="lib/jquery.js"></script>
+	<script type="text/javascript" src="lib/jquery.sparkline.js"></script>
 	<script src="lib/mediaelement.js"></script>
 	<script src="data/timeAdjustments.js"></script>
 	<script src="data/sensorData.js"></script>
+	<!-- add lodash and moment js -->
 	<style type="text/css">
 		#player1 {
 			float: left;
@@ -22,14 +24,67 @@
 
 <div id="dashboard">
 	<ul>
+		<li><b>data frame:</b> <span id="dataframe"></span></li>
 		<li><b>seconds of video:</b> <span id="seconds"></span></li>
 		<li><b>time:</b> <span id="time"></span></li>
-		<li><b>altitude:</b> <span id="altitude">???</span> meters</li>
-		<li><b>compass:</b> <span id="compass">Look Up</span></li>
+		<li><b>time since launch:</b> <span id="flighttime"></span></li>
+		<li><b>altitude:</b> <span id="altitude"></span> <span id="altitude-sparklines"></span></li>
+		<li><b>temperature:</b> <span id="temperature"></span></li>
+		<li><b>pressure:</b> <span id="pressure"></span></li>
+		<li><b>compass:</b> <span id="compass"></span></li>
 	</ul>
 </div>
 
-<script>
+<script type="text/javascript">
+MediaElement('player1', {success: function(me) {
+	me.play();
+
+	// Get momentjs
+	// Get underscore
+	// Get a unit conversion library
+	// Get a decimal precision library
+
+	// Completely hardcoded value when we let go of the balloon
+	var launchTime = 1445718862322.426;
+
+	var lastUpdate = 0;
+	me.addEventListener('timeupdate', function() {
+
+		// Simple debounce to prevent double calls
+		if (lastUpdate == me.currentTime) { return; }
+		lastUpdate = me.currentTime;
+
+		// This whole thing must take 30ms or less
+		var ms = me.currentTime * 1000;
+		var realTime = getRealTime( ms );
+		var data = getDataPacket( realTime );
+		var timeInAir = realTime - launchTime;
+		updateData('seconds', me.currentTime, 'seconds');
+		updateData('time', new Date(realTime));
+		updateData('flighttime', timeInAir < 0 ? 0 : timeInAir, 'milliseconds');
+		if (data) {
+			console.log( data );
+			updateData('dataframe', data.index);
+			updateData('compass', data.heading );
+			updateData('temperature', data.temperature, '&deg; F');
+			updateData('pressure', data.pressure, 'atmospheres');
+			if (data.aprs) {
+				updateData('altitude', data.aprs.altitude, 'meters');
+			}
+		}
+	}, false);
+
+}});
+
+// Update a data field
+function updateData(name, value, units) {
+	// Get trend lines from history
+	if (typeof value !== 'undefined' && value !== null) {
+		$('#' + name).html( value + ' ' + (units || '') ).css({ color: 'black' }).show();
+	} else {
+		$('#' + name).css({ color: 'red' });
+	}
+}
 
 // Get the time adjustment offset
 function getTimeAdjustment( ms ) {
@@ -57,6 +112,7 @@ function getDataPacket( timestamp ) {
 	var lastData = sensorData[0];
 	for (var i=0;i<sensorData.length;i++) {
 		var data = sensorData[i];
+		data.index = i;
 		if ( timestamp < data.time ) {
 			break;
 		}
@@ -64,33 +120,6 @@ function getDataPacket( timestamp ) {
 	}
 	return lastData;
 }
-
-MediaElement('player1', {success: function(me) {
-	me.play();
-
-	var lastUpdate = 0;
-	me.addEventListener('timeupdate', function() {
-
-		// Simple debounce to prevent double calls
-		if (lastUpdate == me.currentTime) { return; }
-		lastUpdate = me.currentTime;
-
-		// This whole thing must take 30ms or less
-		var ms = me.currentTime * 1000;
-		var realTime = getRealTime( ms );
-		var data = getDataPacket( realTime );
-		document.getElementById('seconds').innerHTML = me.currentTime;
-		document.getElementById('time').innerHTML = new Date(realTime);
-		if (data) {
-			console.log( data );
-			document.getElementById('compass').innerHTML = data.heading;
-			if (data.aprs) {
-				document.getElementById('altitude').innerHTML = data.aprs.altitude;
-			}
-		}
-	}, false);
-
-}});
 </script>
 
 </body>
