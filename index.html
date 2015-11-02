@@ -7,16 +7,28 @@
 	<script src="lib/mediaelement.js"></script>
 	<script src="data/timeAdjustments.js"></script>
 	<script src="data/sensorData.js"></script>
+	<style type="text/css">
+		#player1 {
+			float: left;
+		}
+		#dashboard {
+			margin-left: 650px;
+		}
+	</style>
 </head>
 <body>
 
 <video id="player1" src="../full-video.mp4" type="video/mp4" controls="controls"></video>
 
-<input type="button" id="pp" value="play / pause" />
-<ul>
-	<li><b>seconds of video:</b> <span id="seconds"></span></li>
-	<li><b>time:</b> <span id="time"></span></li>
-</ul>
+<div id="dashboard">
+	<ul>
+		<li><b>seconds of video:</b> <span id="seconds"></span></li>
+		<li><b>time:</b> <span id="time"></span></li>
+		<li><b>altitude:</b> <span id="altitude">???</span> meters</li>
+		<li><b>compass:</b> <span id="compass">Look Up</span></li>
+	</ul>
+</div>
+
 <script>
 
 // Get the time adjustment offset
@@ -40,28 +52,43 @@ function getRealTime( ms ) {
 	return adjustment.timestamp + difference;
 }
 
+// Get the latest data packet
 function getDataPacket( timestamp ) {
-	
+	var lastData = sensorData[0];
+	for (var i=0;i<sensorData.length;i++) {
+		var data = sensorData[i];
+		if ( timestamp < data.time ) {
+			break;
+		}
+		lastData = data;
+	}
+	return lastData;
 }
 
 MediaElement('player1', {success: function(me) {
 	me.play();
 
+	var lastUpdate = 0;
 	me.addEventListener('timeupdate', function() {
-		// This whole thing should take 30ms or less
+
+		// Simple debounce to prevent double calls
+		if (lastUpdate == me.currentTime) { return; }
+		lastUpdate = me.currentTime;
+
+		// This whole thing must take 30ms or less
 		var ms = me.currentTime * 1000;
 		var realTime = getRealTime( ms );
 		var data = getDataPacket( realTime );
 		document.getElementById('seconds').innerHTML = me.currentTime;
 		document.getElementById('time').innerHTML = new Date(realTime);
+		if (data) {
+			console.log( data );
+			document.getElementById('compass').innerHTML = data.heading;
+			if (data.aprs) {
+				document.getElementById('altitude').innerHTML = data.aprs.altitude;
+			}
+		}
 	}, false);
-
-	document.getElementById('pp')['onclick'] = function() {
-		if (me.paused)
-			me.play();
-		else
-			me.pause();
-	};
 
 }});
 </script>
