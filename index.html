@@ -5,9 +5,13 @@
 	<title>Nyanpollo Demo</title>
 	<script src="lib/jquery.js"></script>
 	<script type="text/javascript" src="lib/jquery.sparkline.js"></script>
+	<script type="text/javascript" src="lib/lodash.js"></script>
+	<script type="text/javascript" src="lib/moment.js"></script>
 	<script src="lib/mediaelement.js"></script>
 	<script src="data/timeAdjustments.js"></script>
 	<script src="data/sensorData.js"></script>
+	<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<script src="bootstrap/js/bootstrap.min.js"></script>
 	<!-- add lodash and moment js -->
 	<style type="text/css">
 		#player1 {
@@ -16,6 +20,15 @@
 		#dashboard {
 			margin-left: 650px;
 		}
+		#course-needle, #compass-needle {
+			margin-left: 10px;
+			height: 20px;
+		}
+		#map {
+			height: 250px;
+			width: 100%;
+			clear: both;
+		}
 	</style>
 </head>
 <body>
@@ -23,26 +36,94 @@
 <video id="player1" src="../full-video.mp4" type="video/mp4" controls="controls"></video>
 
 <div id="dashboard">
-	<ul>
-		<li><b>data frame:</b> <span id="dataframe"></span></li>
-		<li><b>seconds of video:</b> <span id="seconds"></span></li>
-		<li><b>time:</b> <span id="time"></span></li>
-		<li><b>time since launch:</b> <span id="flighttime"></span></li>
-		<li><b>altitude:</b> <span id="altitude"></span> <span id="altitude-sparklines"></span></li>
-		<li><b>temperature:</b> <span id="temperature"></span></li>
-		<li><b>pressure:</b> <span id="pressure"></span></li>
-		<li><b>compass:</b> <span id="compass"></span></li>
-	</ul>
+	<img src="img/nyanpollo-1.png" />
+	<table class="table">
+		<tr>
+			<th>time:</th>
+			<td><span id="time"></span></td>
+		</tr>
+		<tr>
+			<th>since launch:</th>
+			<td><span id="flighttime"></span></td>
+		</tr>
+		<tr>
+			<th>altitude:</th>
+			<td>
+				<span id="altitude"></span>
+				<span id="altitude-chart"></span>
+			</td>
+		</tr>
+		<tr>
+			<th>course:</th>
+			<td>
+				<span id="course"></span>
+				<img src="img/arrow.svg" id="course-needle" />
+			</td>
+		</tr>
+		<tr>
+			<th>speed:</th>
+			<td>
+				<span id="speed"></span>
+				<span id="speed-chart"></span>
+			</td>
+		</tr>
+		<tr>
+			<th>temperature:</th>
+			<td>
+				<span id="temperature"></span>
+				<span id="temperature-chart"></span>
+			</td>
+		</tr>
+		<tr>
+			<th><b>pressure:</b></th>
+			<td>
+				<span id="pressure"></span>
+				<span id="pressure-chart"></span>
+			</td>
+		</tr>
+		<tr>
+			<th>orientation:</th>
+			<td>
+				<span id="compass"></span>
+				<img src="img/arrow.svg" id="compass-needle" />
+			</td>
+		</tr>
+		<tr>
+			<th>data frame:</th>
+			<td><span id="dataframe"></td>
+		</tr>
+	</table>
 </div>
+<div id="map"></div>
 
 <script type="text/javascript">
-MediaElement('player1', {success: function(me) {
-	me.play();
 
-	// Get momentjs
-	// Get underscore
-	// Get a unit conversion library
-	// Get a decimal precision library
+var map, flightPath, marker;
+function initMap() {
+	map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 36.02933, lng: -115.82533 },
+		disableDefaultUI: true,
+		mapTypeId: google.maps.MapTypeId.SATELLITE,
+    zoom: 12
+  });
+	flightPath = new google.maps.Polyline({
+		path: [],
+    geodesic: true,
+    strokeColor: '#FF0000',
+    strokeOpacity: 1.0,
+    strokeWeight: 2
+  });
+  flightPath.setMap(map);
+	marker = new google.maps.Marker({
+		map: map,
+		optimized: false,
+		icon: 'img/nyancon.gif'
+  });
+};
+
+MediaElement('player1', {success: function(me) {
+	// me.play();
+	// Max height 99921.00 feet
 
 	// Completely hardcoded value when we let go of the balloon
 	var launchTime = 1445718862322.426;
@@ -58,32 +139,130 @@ MediaElement('player1', {success: function(me) {
 		var ms = me.currentTime * 1000;
 		var realTime = getRealTime( ms );
 		var data = getDataPacket( realTime );
-		var timeInAir = realTime - launchTime;
-		updateData('seconds', me.currentTime, 'seconds');
+		var timeSinceLaunch = realTime - launchTime;
 		updateData('time', new Date(realTime));
-		updateData('flighttime', timeInAir < 0 ? 0 : timeInAir, 'milliseconds');
+		updateData('flighttime', formatSeconds(timeSinceLaunch / 1000));
 		if (data) {
-			console.log( data );
 			updateData('dataframe', data.index);
-			updateData('compass', data.heading );
-			updateData('temperature', data.temperature, '&deg; F');
-			updateData('pressure', data.pressure, 'atmospheres');
+			updateData('compass', data.heading, '&deg;' );
+			updateRotation('compass-needle', data.heading);
+			updateData('temperature', data.temperature && data.temperature.toFixed(2), '&deg; F');
+			updateChart('temperature-chart', data, 'temperature');
+			updateData('pressure', data.pressure && parseFloat(data.pressure).toFixed(2), ' atmospheres');
+			updateChart('pressure-chart', data, 'pressure');
 			if (data.aprs) {
-				updateData('altitude', data.aprs.altitude, 'meters');
+				updateData('altitude', metersToFeet(data.aprs.altitude).toFixed(2), ' feet');
+				updateChart('altitude-chart', data, 'aprs.altitude');
+				updateData('course', data.aprs.course, '&deg;');
+				updateRotation('course-needle', data.aprs.course);
+				updateData('speed', kilometersToMiles( data.aprs.speed ).toFixed(2), ' mph');
+				updateChart('speed-chart', data, 'aprs.speed');
+				if (map) {
+					updateMap( map, data );
+				}
 			}
 		}
 	}, false);
 
 }});
 
+function updateMap( map, data ) {
+	var path = [],
+		seenTime = {};
+	for (var i=0;i<=data.index;i++) {
+		if ( sensorData[i].aprs ) {
+				if (!seenTime[ sensorData[i].aprs.time ]) {
+					var latLng = new google.maps.LatLng(sensorData[i].aprs.lat, sensorData[i].aprs.lng);
+					path.push( latLng );
+					seenTime[ sensorData[i].aprs.time ] = true;
+				}
+		}
+	}
+	if (path.length > 0) {
+		flightPath.setPath( path );
+		var position = path[ path.length - 1 ];
+		marker.setPosition( position );
+		map.setCenter( position );
+	}
+}
+
+// Get the minimum and maximum values for a data series
+function getMinMax( path ) {
+	var min = null,
+		max = null;
+	for (var i=0;i<sensorData.length;i++) {
+		var value = _.get( sensorData[i], path );
+		if (value) {
+			if (min === null || value < min) {
+				min = value;
+			}
+			if (max === null || value > max) {
+				max = value;
+			}
+		}
+	}
+	return [ min, max ];
+};
+
+function updateRotation(name, degrees) {
+	$('#' + name).css({ transform: 'rotate(' + degrees + 'deg)' });
+}
+
+// Convert seconds into hours, minutes, seconds
+function formatSeconds(seconds) {
+	if (seconds > 0) {
+		return moment().startOf('day').seconds(seconds).format('H:mm:ss');
+	} else {
+		return 0;
+	}
+}
+
+function metersToFeet(meters) {
+	return meters * 3.280839895;
+}
+
+function kilometersToMiles(kilometers) {
+	return kilometers * 0.6213711922;
+}
+
 // Update a data field
 function updateData(name, value, units) {
 	// Get trend lines from history
 	if (typeof value !== 'undefined' && value !== null) {
-		$('#' + name).html( value + ' ' + (units || '') ).css({ color: 'black' }).show();
+		$('#' + name).html( value + (units || '') ).css({ color: 'black' }).show();
 	} else {
 		$('#' + name).css({ color: 'red' });
 	}
+}
+
+// Update a sparkline chart with historical data
+// take big steps to show the trend, not the time series
+var minMaxCache = {};
+function updateChart(name, packet, path, steps) {
+	steps = steps || 25;
+	var series = [];
+	var lastValue = null;
+	for (var i=packet.index;i>=0;i--) {
+		var datum = _.get( sensorData[ i ], path );
+		if ( datum && lastValue !== datum ) {
+			series.unshift( parseFloat( datum ) );
+			lastValue = datum;
+		}
+		if (series.length>=steps) {
+			break;
+		}
+	}
+	// console.log( name, series );
+	var options = {};
+	var minMax = minMaxCache[ name ];
+	if (!minMax) {
+		minMax = minMaxCache[ name ] = getMinMax( path );
+	}
+	if (minMax) {
+		options.chartRangeMin = minMax[0];
+		options.chartRangeMax = minMax[1];
+	}
+	$('#' + name).sparkline( series, options );
 }
 
 // Get the time adjustment offset
@@ -121,6 +300,6 @@ function getDataPacket( timestamp ) {
 	return lastData;
 }
 </script>
-
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAc5Ro-h3Bpe29eonhjmwfLimoj6BWE0RM&callback=initMap"async defer></script>
 </body>
 </html>
