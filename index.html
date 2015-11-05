@@ -1,142 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<title>Nyanpollo Demo</title>
-	<script src="lib/jquery.js"></script>
-	<script type="text/javascript" src="lib/jquery.sparkline.js"></script>
-	<script type="text/javascript" src="lib/lodash.js"></script>
-	<script type="text/javascript" src="lib/moment.js"></script>
-	<script src="lib/mediaelement.js"></script>
+	<script src="vendor/jquery.js"></script>
+	<script src="vendor/jquery.sparkline.js"></script>
+	<script src="vendor/lodash.js"></script>
+	<script src="vendor/moment.js"></script>
+	<script src="vendor/mediaelement.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
 	<script src="data/timeAdjustments.js"></script>
 	<script src="data/sensorData.js"></script>
+	<script src="lib/nyanpollo-units.js"></script>
+	<script src="lib/nyanpollo-data.js"></script>
+	<script src="lib/nyanpollo-map.js"></script>
+	<script src="lib/nyanpollo-player.js"></script>
 	<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
-	<script src="bootstrap/js/bootstrap.min.js"></script>
-	<!-- add lodash and moment js -->
-	<style type="text/css">
-		#player1 {
-			float: left;
-		}
-		#dashboard {
-			margin-left: 650px;
-		}
-		#course-needle, #compass-needle {
-			margin-left: 10px;
-			height: 20px;
-		}
-		#map {
-			height: 250px;
-			width: 100%;
-			margin-top: -10px;
-			clear: both;
-		}
-	</style>
+	<link href="css/nyanpollo-player.css" rel="stylesheet" media="screen">
 </head>
 <body>
-
-<video id="player1" src="../full-video.mp4" type="video/mp4" controls="controls"></video>
-
-<div id="dashboard">
-	<img src="img/nyanpollo-1.png" />
-	<table class="table">
-		<tr>
-			<th>time:</th>
-			<td><span id="time"></span></td>
-		</tr>
-		<tr>
-			<th>since launch:</th>
-			<td><span id="flighttime"></span></td>
-		</tr>
-		<tr>
-			<th>altitude:</th>
-			<td>
-				<span id="altitude"></span>
-				<span id="altitude-chart"></span>
-			</td>
-		</tr>
-		<tr>
-			<th>course:</th>
-			<td>
-				<span id="course"></span>
-				<img src="img/arrow.svg" id="course-needle" />
-			</td>
-		</tr>
-		<tr>
-			<th>speed:</th>
-			<td>
-				<span id="speed"></span>
-				<span id="speed-chart"></span>
-			</td>
-		</tr>
-		<tr>
-			<th>temperature:</th>
-			<td>
-				<span id="temperature"></span>
-				<span id="temperature-chart"></span>
-			</td>
-		</tr>
-		<tr>
-			<th><b>pressure:</b></th>
-			<td>
-				<span id="pressure"></span>
-				<span id="pressure-chart"></span>
-			</td>
-		</tr>
-		<tr>
-			<th>altitude from kPa:</th>
-			<td>
-				<span id="altitudekPa"></span>
-			</td>
-		</tr>
-		<tr>
-			<th>orientation:</th>
-			<td>
-				<span id="compass"></span>
-				<img src="img/arrow.svg" id="compass-needle" />
-			</td>
-		</tr>
-		<tr>
-			<th>data frame:</th>
-			<td><span id="dataframe"></td>
-		</tr>
-	</table>
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-md-6">
+			<div class="embed-responsive embed-responsive-4by3">
+				<video id="video" class="embed-responsive-item" src="../full-video.mp4" type="video/mp4" controls="controls"></video>
+			</div>
+		</div>
+		<div class="col-md-6" id="dashboard">
+			<!-- <img src="img/nyanpollo-1.png" /> -->
+			<h2>NYANPOLLO-1</h2>
+			<table class="table table-condensed">
+				<tr>
+					<th>time:</th>
+					<td><span id="time"></span></td>
+				</tr>
+				<tr>
+					<th>since launch:</th>
+					<td><span id="flighttime"></span></td>
+				</tr>
+				<tr>
+					<th>altitude:</th>
+					<td>
+						<span id="altitude"></span>
+						<span id="altitude-chart"></span>
+					</td>
+				</tr>
+				<tr>
+					<th>course:</th>
+					<td>
+						<span id="course"></span>
+						<img src="img/arrow.svg" id="course-needle" />
+					</td>
+				</tr>
+				<tr>
+					<th>speed:</th>
+					<td>
+						<span id="speed"></span>
+						<span id="speed-chart"></span>
+					</td>
+				</tr>
+				<tr>
+					<th>temperature:</th>
+					<td>
+						<span id="temperature"></span>
+						<span id="temperature-chart"></span>
+					</td>
+				</tr>
+				<tr>
+					<th><b>pressure:</b></th>
+					<td>
+						<span id="pressure"></span>
+						<span id="pressure-chart"></span>
+					</td>
+				</tr>
+				<tr>
+					<th>altitude from kPa:</th>
+					<td>
+						<span id="altitudekPa"></span>
+					</td>
+				</tr>
+				<tr>
+					<th>orientation:</th>
+					<td>
+						<span id="compass"></span>
+						<img src="img/arrow.svg" id="compass-needle" />
+					</td>
+				</tr>
+				<tr>
+					<th>data frame:</th>
+					<td><span id="dataframe"></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-12">
+			<div id="map"></div>
+		</div>
+	</div>
 </div>
-<div id="map"></div>
-
 <script type="text/javascript">
 
-var map, flightPath, marker;
+var map;
 function initMap() {
-	map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 36.02933, lng: -115.82533 },
-		// disableDefaultUI: true,
-		mapTypeId: google.maps.MapTypeId.SATELLITE,
-    zoom: 12
-  });
-	flightPath = new google.maps.Polyline({
-		path: [],
-    geodesic: true,
-    strokeColor: '#FF0000',
-    strokeOpacity: 1.0,
-    strokeWeight: 2
-  });
-  flightPath.setMap(map);
-	marker = new google.maps.Marker({
-		position: { lat: 36.02933, lng: -115.82533 },
-		map: map,
-		optimized: false,
+	map = new NyanpolloMap(document.getElementById('map'), {
+		startPosition: { lat: 36.02933, lng: -115.82533 },
 		icon: 'img/nyancon.gif'
-  });
+	});
 };
 
-MediaElement('player1', {success: function(me) {
+var dataSource = new NyanpolloData(sensorData, {
+	timeAdjustments: timeAdjustments
+});
+
+MediaElement('video', {success: function(me) {
 	// me.play();
 	// Max height 99921.00 feet
 
 	// Completely hardcoded value when we let go of the balloon
 	var launchTime = 1445718862322.426;
-
 	var lastUpdate = 0;
+	var initialPressure = dataSource.getFirst('pressure');
 	me.addEventListener('timeupdate', function() {
 
 		// Simple debounce to prevent double calls
@@ -144,14 +128,16 @@ MediaElement('player1', {success: function(me) {
 		lastUpdate = me.currentTime;
 
 		// This whole thing must take 30ms or less
-		var ms = me.currentTime * 1000;
-		var realTime = getRealTime( ms );
-		var data = getDataPacket( realTime );
+		var currentMs = me.currentTime * 1000;
+
+		var realTime = dataSource.getTime( currentMs );
+		var data = dataSource.getData( realTime );
 		var timeSinceLaunch = realTime - launchTime;
+
 		updateData('time', new Date(realTime));
 		updateData('flighttime', formatSeconds(timeSinceLaunch / 1000));
 		if (data) {
-			updateData('dataframe', data.index);
+			updateData('dataframe', data._index);
 			updateData('compass', data.heading, '&deg;' );
 			updateRotation('compass-needle', data.heading);
 			updateData('temperature', data.temperature && data.temperature.toFixed(2), '&deg; F');
@@ -160,10 +146,10 @@ MediaElement('player1', {success: function(me) {
 			updateChart('pressure-chart', data, 'pressure');
 			if (data.pressure) {
 				updateData('altitudekPa', metersToFeet(
-						kPaToAltitude( data.pressure )
+						kPaToAltitude( initialPressure, data.pressure )
 					).toFixed(2), ' feet');
 			} else {
-				updateDate('altutidekPa', null);
+				updateData('altutidekPa', null);
 			}
 			if (data.aprs) {
 				updateData('altitude', metersToFeet(data.aprs.altitude).toFixed(2), ' feet');
@@ -180,158 +166,6 @@ MediaElement('player1', {success: function(me) {
 	}, false);
 
 }});
-
-// Convert kilopascals to altutide - cribbed from https://github.com/sparkfun/BMP180_Breakout
-function kPaToAltitude( pressure ) {
-	var initialPressure = getInitialData('pressure');
-	var altitude = 44330.0 * ( 1 - Math.pow( pressure / initialPressure, 1/5.255 ) );
-	return altitude;
-}
-
-// Get the first non-null occurence of a data path in the sensor set
-function getInitialData( path ) {
-	for (var i=0;i<sensorData.length;i++) {
-		var datum = _.get( sensorData[i], path );
-		if (datum !== undefined && datum !== null) {
-			return datum;
-		}
-	}
-}
-
-// Update the map with the latest indianna jones trail and position
-function updateMap( map, data ) {
-	var path = [],
-		seenTime = {};
-	for (var i=0;i<=data.index;i++) {
-		if ( sensorData[i].aprs ) {
-				if (!seenTime[ sensorData[i].aprs.time ]) {
-					var latLng = new google.maps.LatLng(sensorData[i].aprs.lat, sensorData[i].aprs.lng);
-					path.push( latLng );
-					seenTime[ sensorData[i].aprs.time ] = true;
-				}
-		}
-	}
-	if (path.length > 0) {
-		flightPath.setPath( path );
-		var position = path[ path.length - 1 ];
-		map.panTo( position );
-		marker.setPosition( position );
-	}
-}
-
-// Get the minimum and maximum values for a data series
-function getMinMax( path ) {
-	var min = null,
-		max = null;
-	for (var i=0;i<sensorData.length;i++) {
-		var value = _.get( sensorData[i], path );
-		if (value) {
-			if (min === null || value < min) {
-				min = value;
-			}
-			if (max === null || value > max) {
-				max = value;
-			}
-		}
-	}
-	return [ min, max ];
-};
-
-function updateRotation(name, degrees) {
-	$('#' + name).css({ transform: 'rotate(' + degrees + 'deg)' });
-}
-
-// Convert seconds into hours, minutes, seconds
-function formatSeconds(seconds) {
-	if (seconds > 0) {
-		return moment().startOf('day').seconds(seconds).format('H:mm:ss');
-	} else {
-		return 0;
-	}
-}
-
-function metersToFeet(meters) {
-	return meters * 3.280839895;
-}
-
-function kilometersToMiles(kilometers) {
-	return kilometers * 0.6213711922;
-}
-
-// Update a data field
-function updateData(name, value, units) {
-	// Get trend lines from history
-	if (typeof value !== 'undefined' && value !== null) {
-		$('#' + name).html( value + (units || '') ).css({ color: 'black' }).show();
-	} else {
-		$('#' + name).css({ color: 'red' });
-	}
-}
-
-// Update a sparkline chart with historical data
-// take big steps to show the trend, not the time series
-var minMaxCache = {};
-function updateChart(name, packet, path, steps) {
-	steps = steps || 25;
-	var series = [];
-	var lastValue = null;
-	for (var i=packet.index;i>=0;i--) {
-		var datum = _.get( sensorData[ i ], path );
-		if ( datum && lastValue !== datum ) {
-			series.unshift( parseFloat( datum ) );
-			lastValue = datum;
-		}
-		if (series.length>=steps) {
-			break;
-		}
-	}
-	// console.log( name, series );
-	var options = {};
-	var minMax = minMaxCache[ name ];
-	if (!minMax) {
-		minMax = minMaxCache[ name ] = getMinMax( path );
-	}
-	if (minMax) {
-		options.chartRangeMin = minMax[0];
-		options.chartRangeMax = minMax[1];
-	}
-	$('#' + name).sparkline( series, options );
-}
-
-// Get the time adjustment offset
-function getTimeAdjustment( ms ) {
-	var lastAdjustment = timeAdjustments[0];
-	for (var i=0;i<timeAdjustments.length;i++) {
-		var adjustment = timeAdjustments[ i ];
-		if (ms < adjustment.videoTime) {
-			break;
-		}
-		lastAdjustment = adjustment;
-	}
-	return lastAdjustment;
-};
-
-// Given the video seconds, apply adjustment and give a real timestamp
-function getRealTime( ms ) {
-	// {duration: "17s", videoTime: 16770, timestamp: 1445718882843, date: "2015-10-24T20:34:42+00:00"}
-	var adjustment = getTimeAdjustment( ms );
-	var difference = ms - adjustment.videoTime;
-	return adjustment.timestamp + difference;
-}
-
-// Get the latest data packet
-function getDataPacket( timestamp ) {
-	var lastData = sensorData[0];
-	for (var i=0;i<sensorData.length;i++) {
-		var data = sensorData[i];
-		data.index = i;
-		if ( timestamp < data.time ) {
-			break;
-		}
-		lastData = data;
-	}
-	return lastData;
-}
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAc5Ro-h3Bpe29eonhjmwfLimoj6BWE0RM&callback=initMap"async defer></script>
 </body>
