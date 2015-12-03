@@ -4,6 +4,15 @@
   transition: transform 0.3s ease-out;
 }
 
+.rainbow {
+  background-image: url('../img/rainbow.png');
+  padding: 0 10px;
+  line-height: 52px;
+  color: white;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+  margin: 5px 0;
+}
+
 #map {
   height: 250px;
   width: 100%;

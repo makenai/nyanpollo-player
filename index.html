@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>Nyanpollo Demo</title>
+	<title>Nyanpollo-1 Mission</title>
 	<script src="vendor/jquery.js"></script>
 	<script src="vendor/jquery.sparkline.js"></script>
 	<script src="vendor/lodash.js"></script>
@@ -16,6 +16,7 @@
 	<script src="lib/nyanpollo-player.js"></script>
 	<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 	<link href="css/nyanpollo-player.css" rel="stylesheet" media="screen">
+	<link rel="shortcut icon" href="img/nyancon.gif" />
 </head>
 <body>
 <div class="container-fluid">
@@ -27,8 +28,7 @@
 			</div>
 		</div>
 		<div class="col-md-6" id="dashboard">
-			<!-- <img src="img/nyanpollo-1.png" /> -->
-			<h2>NYANPOLLO-1</h2>
+			<h2 class="rainbow">Nyanpollo-1 Mission</h2>
 			<table class="table table-condensed">
 				<tr>
 					<th>time:</th>
@@ -93,7 +93,7 @@
 			</table>
 		</div>
 	</div>
-	<div class="row">
+	<div id="mapBox" class="row">
 		<div class="col-md-12">
 			<div id="map"></div>
 		</div>
@@ -145,6 +145,7 @@ function onYouTubeIframeAPIReady() {
 	  width: '640',
 	  videoId: 'RpGzI-LYGMo',
 		playerVars: {
+			start: 1,
 			enablejsapi: true
 		},
 		events: {
