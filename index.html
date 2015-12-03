@@ -113,63 +113,17 @@ var dataSource = new NyanpolloData(sensorData, {
 	timeAdjustments: timeAdjustments
 });
 
-var player = new NyanpolloPlayer({
+var player = new NyanpolloPlayer(dataSource, {
+	// Completely hardcoded value when we let go of the balloon
 	launchTime: 1445718862322.426
 });
 
 
 MediaElement('video', {success: function(me) {
-	// me.play();
-	// Max height 99921.00 feet
-
-	// Completely hardcoded value when we let go of the balloon
-	var launchTime = 1445718862322.426;
-	var lastUpdate = 0;
-	var initialPressure = dataSource.getFirst('pressure');
 	me.addEventListener('timeupdate', function() {
-
-		// Simple debounce to prevent double calls
-		if (lastUpdate == me.currentTime) { return; }
-		lastUpdate = me.currentTime;
-
-		// This whole thing must take 30ms or less
 		var currentMs = me.currentTime * 1000;
-
-		var realTime = dataSource.getTime( currentMs );
-		var data = dataSource.getData( realTime );
-		var timeSinceLaunch = realTime - launchTime;
-
-		updateData('time', new Date(realTime));
-		updateData('flighttime', formatSeconds(timeSinceLaunch / 1000));
-		if (data) {
-			updateData('dataframe', data._index);
-			updateData('compass', data.heading, '&deg;' );
-			updateRotation('compass-needle', data.heading);
-			updateData('temperature', data.temperature && data.temperature.toFixed(2), '&deg; F');
-			updateChart('temperature-chart', data, 'temperature');
-			updateData('pressure', data.pressure && parseFloat(data.pressure).toFixed(2), ' kPa');
-			updateChart('pressure-chart', data, 'pressure');
-			if (data.pressure) {
-				updateData('altitudekPa', metersToFeet(
-						kPaToAltitude( initialPressure, data.pressure )
-					).toFixed(2), ' feet');
-			} else {
-				updateData('altutidekPa', null);
-			}
-			if (data.aprs) {
-				updateData('altitude', metersToFeet(data.aprs.altitude).toFixed(2), ' feet');
-				updateChart('altitude-chart', data, 'aprs.altitude');
-				updateData('course', data.aprs.course, '&deg;');
-				updateRotation('course-needle', data.aprs.course);
-				updateData('speed', kilometersToMiles( data.aprs.speed ).toFixed(2), ' mph');
-				updateChart('speed-chart', data, 'aprs.speed');
-			}
-			if (map) {
-				updateMap( map, data );
-			}
-		}
+		player.updateTime( currentMs );
 	}, false);
-
 }});
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAc5Ro-h3Bpe29eonhjmwfLimoj6BWE0RM&callback=initMap"async defer></script>
