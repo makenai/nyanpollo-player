@@ -113,6 +113,11 @@ var dataSource = new NyanpolloData(sensorData, {
 	timeAdjustments: timeAdjustments
 });
 
+var player = new NyanpolloPlayer({
+	launchTime: 1445718862322.426
+});
+
+
 MediaElement('video', {success: function(me) {
 	// me.play();
 	// Max height 99921.00 feet
@@ -158,9 +163,9 @@ MediaElement('video', {success: function(me) {
 				updateRotation('course-needle', data.aprs.course);
 				updateData('speed', kilometersToMiles( data.aprs.speed ).toFixed(2), ' mph');
 				updateChart('speed-chart', data, 'aprs.speed');
-				if (map) {
-					updateMap( map, data );
-				}
+			}
+			if (map) {
+				updateMap( map, data );
 			}
 		}
 	}, false);
